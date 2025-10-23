@@ -1,0 +1,34 @@
+DOS25
+==============================================
+Disk On System 2025 (DOS25) is a bootloader for E-comOS , isn't is MS-DOS's upgrade version
+==============================================
+How to use it
+----------------------------------------------
+If you are E-comOS (or derivative versions) user, the DOS25 is installed in your computer 'cause E-comOS (or derivative versions) are using it to startup.
+If you are not E-comOS (or derivative versions) user , the DOS25 is not installed in your computer, 'cause they maybe are using GRUB or Windows Boot Manager to startup.
+It's working on your computer start time , and your computer shut down time.
+It's quite and quickly we hope so.
+==============================================
+How to make your release and edit it 
+----------------------------------------------
+To edit it :
+  You can clone this repo using git 
+  ```bash
+  git clone https://github.com/E-comOS-Operation-System/DOS25.git
+  ```
+  then see Wiki "How to make yourself release?"
+To make your release :
+  You can clone this repo using git 
+  ```bash
+  git clone https://github.com/E-comOS-Operation-System/DOS25.git
+  ```
+  then you can use make
+  ```bash
+  make myself-release
+  ```
+  You will get a .bin file , can install to your operation system
+==============================================
+LICENSE
+----------------------------------------------
+We are using GNU GPL Version 3 to license our DOS25
+==============================================
