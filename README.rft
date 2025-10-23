@@ -13,19 +13,13 @@ How to make your release and edit it
 ----------------------------------------------
 To edit it :
   You can clone this repo using git 
-  ```bash
-  git clone https://github.com/E-comOS-Operation-System/DOS25.git
-  ```
+  "git clone https://github.com/E-comOS-Operation-System/DOS25.git"
   then see Wiki "How to make yourself release?"
 To make your release :
   You can clone this repo using git 
-  ```bash
-  git clone https://github.com/E-comOS-Operation-System/DOS25.git
-  ```
+  "git clone https://github.com/E-comOS-Operation-System/DOS25.git"
   then you can use make
-  ```bash
-  make myself-release
-  ```
+  "make myself-release"
   You will get a .bin file , can install to your operation system
 ==============================================
 LICENSE
