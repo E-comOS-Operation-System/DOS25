@@ -1,0 +1,6 @@
+build/
+*.o
+*.bin
+*.img
+*.dsf
+dos25-disk
