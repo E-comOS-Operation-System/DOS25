@@ -20,19 +20,22 @@ mov si, menu_options
 call print_str
 
 ; Wait for user input with timeout
-mov cx, 50          ; 5 seconds timeout (50 * 0.1s)
+mov word [timeout_counter], 50  ; 5 seconds timeout (50 * 0.1s)
 .wait_key:
     mov ah, 0x01    ; Check keyboard buffer
     int 0x16
     jnz .key_pressed
     
     ; Delay 0.1 second
+    push cx
     mov ah, 0x86
     mov cx, 0x01
     mov dx, 0x86A0
     int 0x15
+    pop cx
     
-    loop .wait_key
+    dec word [timeout_counter]
+    jnz .wait_key
     
     ; Timeout - default to normal boot
     jmp normal_boot
@@ -124,6 +127,8 @@ menu_options    db '1. Normal Boot (E-comOS)', 0x0D, 0x0A
 msg_normal      db 0x0D, 0x0A, 'Booting E-comOS...', 0x0D, 0x0A, 0
 msg_rescue      db 0x0D, 0x0A, 'Entering Rescue Mode...', 0x0D, 0x0A, 0
 msg_disk_err    db 'DOS25: Disk read error!', 0
+
+timeout_counter dw 0
 
 times 510 - ($ - $$) db 0
 dw 0x55AA

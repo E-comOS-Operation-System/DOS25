@@ -143,7 +143,7 @@ int install_dsf(const char* filename, const char* device) {
     
     // Write kernel to sector 3+
     fseek(dsf, header.kernel_offset, SEEK_SET);
-    fseek(dev, 1536, SEEK_SET);  // Sector 3
+    fseek(dev, 1024, SEEK_SET);  // Sector 3 (512*2=1024)
     uint8_t* kernel_data = malloc(header.kernel_size);
     fread(kernel_data, 1, header.kernel_size, dsf);
     fwrite(kernel_data, 1, header.kernel_size, dev);

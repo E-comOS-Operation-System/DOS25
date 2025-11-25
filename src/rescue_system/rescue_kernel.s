@@ -55,13 +55,17 @@ install_system:
     jc .error
     
     ; Check signature "DSF"
-    mov si, 0x50000
+    push ds
+    mov ax, 0x5000
+    mov ds, ax
+    xor si, si
     cmp byte [si], 'D'
-    jne .error
+    jne .error_pop
     cmp byte [si+1], 'S'
-    jne .error
+    jne .error_pop
     cmp byte [si+2], 'F'
-    jne .error
+    jne .error_pop
+    pop ds
     
     ; Write boot sector to sector 2
     mov ax, 0x5000
@@ -88,6 +92,8 @@ install_system:
     
     ret
 
+.error_pop:
+    pop ds
 .error:
     mov si, msg_error
     call print

@@ -28,14 +28,14 @@ mov si, msg_boot
 call print_str
 
 ; -------------------------- 2. Load Kernel into Memory (Core Functionality, No Placeholder) --------------------------
-; Kernel location: Disk sector 2 (LBA=1), loaded to physical address 0x100000 (64KB aligned, kernel link address)
+; Kernel location: Disk sector 3 (LBA=2), loaded to physical address 0x100000 (64KB aligned, kernel link address)
 mov ax, 0x1000    ; es:bx = 0x1000:0000 → Physical address 0x100000 (kernel load address)
 mov es, ax
 xor bx, bx
 mov ah, 0x02      ; BIOS disk read function number
 mov al, 20        ; Read 20 sectors (enough for the initial kernel, increase if needed)
 mov ch, 0         ; Cylinder 0
-mov cl, 2         ; Sector 2 (starts from 1, skip boot sector)
+mov cl, 3         ; Sector 3 (kernel starts here, sector 2 is bootsect.s)
 mov dh, 0         ; Head 0
 mov dl, 0x80      ; First hard disk (0x00 is floppy)
 int 0x13          ; Call BIOS disk interrupt
