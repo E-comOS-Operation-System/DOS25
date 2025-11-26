@@ -18,7 +18,6 @@ RELEASE_BIN := $(BUILD_DIR)/dos25-release.bin
 COMPONENTS := \
     $(BUILD_DIR)/boot_menu.bin \
     $(BUILD_DIR)/bootsect.bin \
-    $(BUILD_DIR)/kernel.bin \
     $(BUILD_DIR)/rescue_boot.bin \
     $(BUILD_DIR)/rescue_kernel.bin
 
@@ -44,23 +43,19 @@ $(BUILD_DIR):
 # --------------------------
 # Compile individual components (assembler sources)
 # --------------------------
-$(BUILD_DIR)/boot_menu.bin: $(SRC_DIR)/boot_menu.s
+$(BUILD_DIR)/boot_menu.bin: $(SRC_DIR)/bootloader/boot_menu.s
 	@echo "🔧 Assembling $<..."
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-$(BUILD_DIR)/bootsect.bin: $(SRC_DIR)/bootsect.s
+$(BUILD_DIR)/bootsect.bin: $(SRC_DIR)/boot/bootsect.s
 	@echo "🔧 Assembling $<..."
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-$(BUILD_DIR)/kernel.bin: $(SRC_DIR)/kernel.s  # Adjust if kernel has multiple sources
+$(BUILD_DIR)/rescue_boot.bin: $(SRC_DIR)/rescue_system/rescue_boot.s
 	@echo "🔧 Assembling $<..."
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
-$(BUILD_DIR)/rescue_boot.bin: $(SRC_DIR)/rescue_boot.s
-	@echo "🔧 Assembling $<..."
-	$(NASM) $(NASM_FLAGS) $< -o $@
-
-$(BUILD_DIR)/rescue_kernel.bin: $(SRC_DIR)/rescue_kernel.s
+$(BUILD_DIR)/rescue_kernel.bin: $(SRC_DIR)/rescue_system/rescue_kernel.s
 	@echo "🔧 Assembling $<..."
 	$(NASM) $(NASM_FLAGS) $< -o $@
 
