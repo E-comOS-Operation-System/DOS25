@@ -13,6 +13,11 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+; ========================================================
+; Master Boot Record (MBR) - bootsect.s
+; Loads stage 2 (13 sectors) to 0x8000
+; ========================================================
+
 [BITS 16]
 [ORG 0x7C00]
 
@@ -21,48 +26,69 @@ start:
     xor ax, ax
     mov ds, ax
     mov es, ax
-    mov fs, ax
-    mov gs, ax
     mov ss, ax
     mov sp, 0x7C00
     sti
     
+    ; Save boot drive
     mov [boot_drive], dl
     
     ; Clear screen
     mov ax, 0x0003
     int 0x10
     
-    ; Print boot message
-    mov si, msg_loading
+    ; Print message
+    mov si, msg_boot
     call print_string
     
-    ; Load stage 2 (13 sectors) to 0x8000
-    mov ax, 0x0800
-    mov es, ax
-    xor bx, bx
+    ; ============================================
+    ; CRITICAL: Load 13 sectors, NOT 4!
+    ; Stage 2 is 6656 bytes = 13 sectors
+    ; ============================================
+    mov ax, 0x0800      ; Segment 0x0800
+    mov es, ax          ; ES = 0x0800
+    xor bx, bx          ; Offset 0x0000
+                        ; Physical address = 0x0800:0x0000 = 0x8000
     
-    mov ah, 0x02        ; Read sectors
-    mov al, 13          ; Number of sectors to read
-    mov ch, 0           ; Cylinder
-    mov cl, 2           ; Sector (starting from 2)
-    mov dh, 0           ; Head
+    mov ah, 0x02        ; BIOS read sectors
+    mov al, 13          ; NUMBER OF SECTORS TO LOAD: 13
+    mov ch, 0           ; Cylinder 0
+    mov cl, 2           ; Sector 2 (sector 1 is MBR)
+    mov dh, 0           ; Head 0
     mov dl, [boot_drive] ; Drive
     int 0x13
+    
+    ; Check for error
     jc disk_error
     
-    ; Jump to stage 2
-    mov si, msg_jump
+    ; Verify we loaded 13 sectors
+    cmp al, 13
+    jne disk_error
+    
+    ; Success - jump to stage 2
+    mov si, msg_success
     call print_string
+    
+    ; CRITICAL: This jumps to 0x8000
     jmp 0x0800:0x0000
 
 disk_error:
     mov si, msg_error
     call print_string
-    mov al, ah          ; Error code
+    
+    ; Display error code
+    mov al, ah
     call print_hex_byte
-    jmp $
+    
+    ; Hang
+    cli
+.hang:
+    hlt
+    jmp .hang
 
+; ============================================
+; Functions
+; ============================================
 print_string:
     pusha
     mov ah, 0x0E
@@ -96,10 +122,16 @@ print_hex_byte:
     int 0x10
     ret
 
-boot_drive: db 0
-msg_loading: db "Booting DOS25...", 0x0D, 0x0A, 0
-msg_jump: db "Loading stage2...", 0x0D, 0x0A, 0
-msg_error: db "Disk error: 0x", 0
+; ============================================
+; Data
+; ============================================
+boot_drive:     db 0
+msg_boot:       db "Stage 1: Booting DOS25...", 0x0D, 0x0A, 0
+msg_success:    db "Stage 1: Loading 13 sectors to 0x8000...", 0x0D, 0x0A, 0
+msg_error:      db "Stage 1: Disk error 0x", 0
 
+; ============================================
+; Boot signature
+; ============================================
 times 510-($-$$) db 0
 dw 0xAA55

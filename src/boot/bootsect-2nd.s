@@ -14,97 +14,74 @@
 ; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ; ================================================================
-; Stage 2 Bootloader
+; DOS25 - Stage 2 Bootloader
+; Loaded at physical address 0x8000 by Stage 1
 ; ================================================================
-; Loaded at 0x8000 by the MBR (bootsect.s)
-; Responsible for:
-; 1. Setting up a protected mode environment
-; 2. Loading the kernel
-; 3. Jumping to the kernel
-; ================================================================
-
 [BITS 16]               ; 16-bit real mode
-[ORG 0x8000]           ; Stage 2 is loaded at physical address 0x8000
+[ORG 0x0000]           ; Critical fix: Use ORG 0x0000 instead of 0x8000
+                       ; Because Stage 1 jumps to 0x0800:0x0000
+                       ; CS=0x0800, IP=0x0000, so ORG should be 0x0000
 
 ; ================================================================
 ; Entry Point
 ; ================================================================
 stage2_start:
+    ; Immediately set up segment registers
     cli                 ; Disable interrupts
-    xor ax, ax          ; Clear AX register
-    mov ds, ax          ; Set DS to 0
-    mov es, ax          ; Set ES to 0
-    mov ss, ax          ; Set SS to 0
-    mov sp, 0x7C00      ; Set stack pointer to 0x7C00
+    mov ax, cs          ; Copy CS to DS, ES, SS
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov sp, 0x7C00      ; Stack grows downward from 0x7C00
     sti                 ; Enable interrupts
     
-    ; Clear screen and set text mode
-    mov ax, 0x0003      ; 80x25 text mode
+    ; Now we can safely use BIOS interrupts
+    ; Clear screen and set to 80x25 text mode
+    mov ax, 0x0003      ; AH=0x00 (Set video mode), AL=0x03 (80x25)
     int 0x10
     
-    ; Set text color to light green
-    mov ax, 0x0A00
+    ; Set text color to RED (for visual proof stage 2 is running)
+    mov ah, 0x0B        ; BIOS function: Set color
+    mov bh, 0x00        ; Page 0
+    mov bl, 0x04        ; Color: Red
     int 0x10
     
-    ; ============================================================
-    ; Debug Message: Show that we're running at 0x8000
-    ; ============================================================
-    mov si, msg_check_addr
+    ; Print success message
+    mov si, msg_success
     call print_string
     
-    ; ============================================================
-    ; Enable A20 Line
-    ; Required to access memory above 1MB in protected mode
-    ; ============================================================
-enable_a20:
-    call wait_for_input
-    mov al, 0xD1
-    out 0x64, al
-    call wait_for_input
-    mov al, 0xDF
-    out 0x60, al
-    call wait_for_input
-    
-    mov si, msg_a20_enabled
+    ; Display CS:IP to verify our location
+    mov si, msg_cs_ip
     call print_string
+    mov ax, cs
+    call print_hex_word
+    mov al, ':'         ; Separator
+    call print_char
+    mov ax, 0x0000      ; IP is 0x0000
+    call print_hex_word
+    call newline
     
-    ; ============================================================
-    ; Load GDT (Global Descriptor Table)
-    ; Required for protected mode operation
-    ; ============================================================
-    lgdt [gdt_descriptor]   ; Load GDT descriptor
-    mov si, msg_gdt_loaded
-    call print_string
-    
-    ; ============================================================
-    ; Switch to Protected Mode
-    ; ============================================================
-    mov si, msg_enter_pm
-    call print_string
-    
-    ; Set PE (Protection Enable) bit in CR0
-    mov eax, cr0
-    or eax, 0x1
-    mov cr0, eax
-    
-    ; Far jump to flush CPU pipeline and load CS with 32-bit code segment
-    jmp CODE_SEG:init_protected_mode
+    ; Halt the CPU
+    cli
+.hang:
+    hlt
+    jmp .hang
 
 ; ================================================================
 ; Functions
 ; ================================================================
 
 ; ----------------------------------------------------------------
-; Print String
-; ----------------------------------------------------------------
-; Input:  SI = pointer to null-terminated string
-; Output: Prints string to screen
+; Print null-terminated string
+; Input: SI = pointer to string
 ; ----------------------------------------------------------------
 print_string:
     pusha
     mov ah, 0x0E        ; BIOS teletype function
+    mov bh, 0x00        ; Page 0
+    mov bl, 0x07        ; Light gray text
 .print_loop:
-    lodsb               ; Load next character
+    lodsb               ; Load byte from [SI] to AL, increment SI
     or al, al           ; Check for null terminator
     jz .print_done
     int 0x10            ; Print character
@@ -114,151 +91,62 @@ print_string:
     ret
 
 ; ----------------------------------------------------------------
-; Wait for Input Buffer
+; Print single character
+; Input: AL = character to print
 ; ----------------------------------------------------------------
-; Required for A20 line enabling
+print_char:
+    push ax
+    mov ah, 0x0E
+    int 0x10
+    pop ax
+    ret
+
 ; ----------------------------------------------------------------
-wait_for_input:
-    in al, 0x64
-    test al, 0x02
-    jnz wait_for_input
+; Print newline (CR+LF)
+; ----------------------------------------------------------------
+newline:
+    push ax
+    mov ah, 0x0E
+    mov al, 0x0D        ; Carriage return
+    int 0x10
+    mov al, 0x0A        ; Line feed
+    int 0x10
+    pop ax
+    ret
+
+; ----------------------------------------------------------------
+; Print word in hexadecimal
+; Input: AX = word to print
+; ----------------------------------------------------------------
+print_hex_word:
+    pusha
+    mov cx, 4           ; 4 hex digits
+.hex_loop:
+    rol ax, 4           ; Rotate left to get next nibble
+    push ax
+    and al, 0x0F         ; Mask lower nibble
+    cmp al, 10
+    jl .is_digit
+    add al, 7           ; Adjust for A-F
+.is_digit:
+    add al, '0'         ; Convert to ASCII
+    call print_char
+    pop ax
+    loop .hex_loop
+    popa
     ret
 
 ; ================================================================
 ; Data Section
 ; ================================================================
-
-; Messages
-msg_check_addr:     db "Stage 2: Running at 0x8000", 0x0D, 0x0A, 0
-msg_a20_enabled:    db "A20 Line: Enabled", 0x0D, 0x0A, 0
-msg_gdt_loaded:     db "GDT: Loaded", 0x0D, 0x0A, 0
-msg_enter_pm:       db "PM: Switching to protected mode...", 0x0D, 0x0A, 0
-msg_kernel_loaded:  db "Kernel: Loading from sector 15...", 0x0D, 0x0A, 0
-msg_jump_to_kernel: db "Jumping to kernel at 0x100000...", 0x0D, 0x0A, 0
-
-; ================================================================
-; Protected Mode Code (32-bit)
-; ================================================================
-[BITS 32]
-
-; ----------------------------------------------------------------
-; Protected Mode Initialization
-; ----------------------------------------------------------------
-init_protected_mode:
-    ; Set up segment registers for protected mode
-    mov ax, DATA_SEG
-    mov ds, ax
-    mov es, ax
-    mov fs, ax
-    mov gs, ax
-    mov ss, ax
-    
-    ; Set up stack
-    mov ebp, 0x90000    ; Stack base pointer
-    mov esp, ebp        ; Stack pointer
-    
-    mov esi, msg_pm_active
-    call print_string_pm
-    
-    ; ============================================================
-    ; Load Kernel
-    ; Kernel starts at sector 15 (after MBR and Stage 2)
-    ; ============================================================
-    mov esi, msg_load_kernel
-    call print_string_pm
-    
-    ; We'll need to load the kernel from disk
-    ; This requires writing a disk driver in protected mode
-    ; For now, we'll just hang
-    
-    ; ============================================================
-    ; Hang (temporary - will be replaced with kernel loader)
-    ; ============================================================
-    cli
-.hang:
-    hlt
-    jmp .hang
-
-; ----------------------------------------------------------------
-; Print String in Protected Mode
-; ----------------------------------------------------------------
-; Input:  ESI = pointer to null-terminated string
-; Output: Prints to video memory at 0xB8000
-; ----------------------------------------------------------------
-print_string_pm:
-    pusha
-    mov edx, 0xB8000    ; Video memory address
-    mov ah, 0x0F        ; White text on black background
-    
-.print_loop_pm:
-    lodsb               ; Load next character
-    or al, al           ; Check for null terminator
-    jz .print_done_pm
-    
-    mov [edx], ax       ; Store character and attribute
-    add edx, 2          ; Move to next character position
-    
-    jmp .print_loop_pm
-    
-.print_done_pm:
-    popa
-    ret
-
-; ================================================================
-; GDT (Global Descriptor Table)
-; ================================================================
-gdt_start:
-    ; Null descriptor (required)
-    dq 0x0000000000000000
-    
-    ; Code segment descriptor
-gdt_code:
-    dw 0xFFFF           ; Limit (bits 0-15)
-    dw 0x0000           ; Base (bits 0-15)
-    db 0x00             ; Base (bits 16-23)
-    db 10011010b        ; Access byte
-    ;   P=1, DPL=00, S=1, E=1, DC=0, RW=1, A=0
-    db 11001111b        ; Flags + Limit (bits 16-19)
-    ;   G=1, D/B=1, L=0, AVL=0, Limit=1111
-    db 0x00             ; Base (bits 24-31)
-    
-    ; Data segment descriptor
-gdt_data:
-    dw 0xFFFF           ; Limit (bits 0-15)
-    dw 0x0000           ; Base (bits 0-15)
-    db 0x00             ; Base (bits 16-23)
-    db 10010010b        ; Access byte
-    ;   P=1, DPL=00, S=1, E=0, DC=0, RW=1, A=0
-    db 11001111b        ; Flags + Limit (bits 16-19)
-    ;   G=1, D/B=1, L=0, AVL=0, Limit=1111
-    db 0x00             ; Base (bits 24-31)
-gdt_end:
-
-; ================================================================
-; GDT Descriptor
-; ================================================================
-gdt_descriptor:
-    dw gdt_end - gdt_start - 1  ; Size of GDT
-    dd gdt_start                ; Address of GDT
-
-; ================================================================
-; Segment Selectors
-; ================================================================
-CODE_SEG equ gdt_code - gdt_start
-DATA_SEG equ gdt_data - gdt_start
-
-; ================================================================
-; Protected Mode Messages
-; ================================================================
-msg_pm_active:      db "Protected Mode: Active", 0
-msg_load_kernel:    db "Kernel: Loading...", 0
-msg_error:          db "Error: Kernel not found", 0
+msg_success:    db "Stage 2: SUCCESS! Running at 0x8000", 0x0D, 0x0A, 0
+msg_cs_ip:      db "CS:IP = 0x", 0
+msg_a20:        db "A20: Enabled", 0x0D, 0x0A, 0
+msg_gdt:        db "GDT: Loaded", 0x0D, 0x0A, 0
+msg_pm:         db "PM: Switching to protected mode...", 0x0D, 0x0A, 0
 
 ; ================================================================
 ; Padding
-; Pad the file to 13 sectors (6656 bytes) as required
-; Sector 1: MBR (bootsect.s)
-; Sectors 2-14: Stage 2 (this file)
-; Sectors 15+: Kernel
+; Fill to 13 sectors (6656 bytes) as required
 ; ================================================================
-times 6656-($-$$) db 0x90  ; Fill with NOP instructions
+times 6656-($-$$) db 0x90
