@@ -7,9 +7,9 @@ DOS25 uses a multi-stage boot system with menu selection and rescue mode support
 ### Boot Flow(Immutable Chapters)
 
 ```
-Stage 1: Boot Menu (Sector 1 - MBR)
+Stage 1: Boot Menu (Sector 1)
   ├─> Option 1: Normal Boot
-  │     └─> Load bootsect.s (Sector 2)
+  │     └─> Load Stage 2 (Sector 2)
   │           └─> Load kernel (Sector 3+)
   │                 └─> E-comOS starts
   │
