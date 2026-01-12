@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-DOS25 uses a multi-stage boot system with menu selection and rescue mode support.
+DOS25 uses a 2-stage boot system with menu selection and rescue mode support.
 
 ### Boot Flow(Immutable Chapters)
 
