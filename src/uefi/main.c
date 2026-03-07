@@ -34,9 +34,12 @@
 
 
 /* GNU-EFI headers first */
+#if defined(__APPLE__) && defined(__MACH__)
+#error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
+#elif defined(__linux__)
 #include <efi/efi.h>
 #include <efi/efilib.h>
-
+#endif
 /* Project headers */
 #include "../../include/common.h"
 #include "include/boot.h"

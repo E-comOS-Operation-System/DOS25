@@ -5,12 +5,14 @@
  * The runtime daemon that continues running after kernel handoff,
  * providing UEFI Runtime Services access via IPC
  */
-
+#if defined(__APPLE__) && defined(__MACH__)
+#error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
+#elif defined(__linux__)
 #include <efi/efi.h>
 #include <efi/efilib.h>
 #include "../../include/common.h"
 #include "include/boot.h"
-
+#endif
 /* Global daemon state */
 static shared_memory_header_t* g_shared_memory = NULL;
 static EFI_RUNTIME_SERVICES* g_runtime_services = NULL;
