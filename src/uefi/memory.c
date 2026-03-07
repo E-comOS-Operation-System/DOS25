@@ -24,12 +24,14 @@
  * Uses GNU-EFI standard functions for all operations. Only implements
  * functionality not provided by GNU-EFI.
  */
-
+#if defined(__APPLE__) && defined(__MACH__)
+#error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
+#elif defined(__linux__)
 #include <efi/efi.h>
 #include <efi/efilib.h>
 #include "../../include/common.h"
 #include "include/boot.h"
-
+#endif
 // Global memory map information
 static EFI_MEMORY_DESCRIPTOR* gMemoryMap = NULL;
 static UINTN gMemoryMapSize = 0;

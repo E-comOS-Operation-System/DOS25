@@ -5,11 +5,13 @@
 
 #ifndef DOS25_BOOT_H
 #define DOS25_BOOT_H
-
+#if defined(__APPLE__) && defined(__MACH__)
+#error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
+#elif defined(__linux__)
 #include <efi/efi.h>
 #include <efi/efilib.h>
 #include "../../../include/common.h"
-
+#endif
 #define BOOT_PARAMS_SIGNATURE 0x444F533235525420ULL  // "DOS25RT "
 #define DOS25_RUNTIME_VERSION 1
 
