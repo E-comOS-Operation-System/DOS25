@@ -7,11 +7,12 @@
 #define DOS25_BOOT_H
 #if defined(__APPLE__) && defined(__MACH__)
 #error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
-#elif defined(__linux__)
+return;
+#else
 #include <efi/efi.h>
 #include <efi/efilib.h>
 #include "../../../include/common.h"
-#endif
+
 #define BOOT_PARAMS_SIGNATURE 0x444F533235525420ULL  // "DOS25RT "
 #define DOS25_RUNTIME_VERSION 1
 
@@ -172,5 +173,5 @@ boot_status_t daemon_message_loop(shared_memory_header_t* shared_mem, EFI_RUNTIM
 
 /* Test Functions */
 boot_status_t run_ipc_tests(boot_params_t* params);
-
+#endif /* APPLE*/
 #endif /* DOS25_BOOT_H */

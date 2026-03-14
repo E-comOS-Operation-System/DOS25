@@ -114,5 +114,5 @@ int dos25_get_status(dos25_status_t* status);
 #define DOS25_ERROR_TIMEOUT     -4
 #define DOS25_ERROR_IO          -5
 #define DOS25_ERROR_UNSUPPORTED -6
-
+#define DOS25_ERROR_COMPILE_IN  -7
 #endif /* DOS25_SYSCALLS_H */

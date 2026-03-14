@@ -7,12 +7,12 @@
  */
 #if defined(__APPLE__) && defined(__MACH__)
 #error "In macOS , GNU-EFI library is unsupported. Please build and run this code on a compatible platform (e.g., Linux or *BSD or Windows with WSL)."
-#elif defined(__linux__)
+#else
 #include <efi/efi.h>
 #include <efi/efilib.h>
 #include "../../include/common.h"
 #include "include/boot.h"
-#endif
+
 /* Global daemon state */
 static shared_memory_header_t* g_shared_memory = NULL;
 static EFI_RUNTIME_SERVICES* g_runtime_services = NULL;
@@ -286,3 +286,4 @@ boot_status_t start_runtime_daemon(boot_params_t* params) {
     // Start the daemon message loop
     return daemon_message_loop(params->shared_header, params->rt_services);
 }
+#endif /* (__APPLE__) (__MACH__)*/
